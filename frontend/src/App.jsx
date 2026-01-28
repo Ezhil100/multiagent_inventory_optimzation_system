@@ -9,15 +9,12 @@ const formatCurrency = (value) => {
 };
 
 // KPI Card Component
-function KPICard({ title, value, subtitle, icon }) {
+function KPICard({ title, value, subtitle }) {
   return (
     <div className="kpi-card">
-      <div className="kpi-icon">{icon}</div>
-      <div className="kpi-content">
-        <div className="kpi-value">{value}</div>
-        <div className="kpi-title">{title}</div>
-        {subtitle && <div className="kpi-subtitle">{subtitle}</div>}
-      </div>
+      <div className="kpi-value">{value}</div>
+      <div className="kpi-title">{title}</div>
+      {subtitle && <div className="kpi-subtitle">{subtitle}</div>}
     </div>
   );
 }
@@ -25,10 +22,10 @@ function KPICard({ title, value, subtitle, icon }) {
 // Alert Item Component
 function AlertItem({ alert }) {
   const isCritical = alert.level === 'critical';
-  
+
   return (
     <div className={`alert-item ${isCritical ? 'critical' : 'warning'}`}>
-      <span className="alert-icon">{isCritical ? '🔴' : '🟡'}</span>
+      <span className={`alert-dot ${isCritical ? 'dot-critical' : 'dot-warning'}`}></span>
       <div className="alert-content">
         <div className="alert-product">{alert.product}</div>
         <div className="alert-details">{alert.warehouse} • Stock: {alert.current_stock}</div>
@@ -51,12 +48,12 @@ function InventoryTable({ items, filter, setFilter }) {
   return (
     <div className="card">
       <div className="card-header">
-        <h2>📦 Inventory</h2>
+        <h2>Inventory</h2>
         <select value={filter} onChange={(e) => setFilter(e.target.value)} className="filter-select">
           <option value="">All</option>
-          <option value="OK">✓ OK</option>
-          <option value="REORDER">⚡ Reorder</option>
-          <option value="CRITICAL">🔴 Critical</option>
+          <option value="OK">OK</option>
+          <option value="REORDER">Reorder</option>
+          <option value="CRITICAL">Critical</option>
         </select>
       </div>
       <div className="table-wrapper">
@@ -201,7 +198,6 @@ function App() {
       {/* Header */}
       <header className="header">
         <div className="logo">
-          <span className="logo-icon">📊</span>
           <span className="logo-text">Inventory Optimizer</span>
         </div>
         <div className="header-controls">
@@ -217,34 +213,30 @@ function App() {
             <span className="days-label">days</span>
           </div>
           <button onClick={runSimulation} disabled={simulating} className="btn primary">
-            {simulating ? '⏳ Running...' : '▶ Simulate'}
+            {simulating ? 'Running...' : 'Simulate'}
           </button>
-          <button onClick={resetSystem} className="btn secondary">↻ Reset</button>
+          <button onClick={resetSystem} className="btn secondary">Reset</button>
         </div>
       </header>
 
       {/* KPI Cards */}
       <div className="kpi-grid">
         <KPICard
-          icon="💰"
           title="Inventory Value"
           value={formatCurrency(kpis?.total_inventory_value)}
           subtitle={`${kpis?.total_products || 0} products`}
         />
         <KPICard
-          icon="📈"
           title="Service Level"
           value={`${(kpis?.average_service_level || 0).toFixed(1)}%`}
           subtitle={`${kpis?.simulation_days || 0} days`}
         />
         <KPICard
-          icon="📦"
           title="Orders Placed"
           value={kpis?.total_orders_placed || 0}
           subtitle={`${kpis?.total_units_fulfilled || 0} units`}
         />
         <KPICard
-          icon="💸"
           title="Total Cost"
           value={formatCurrency(kpis?.total_cost)}
           subtitle={`H: ${formatCurrency(kpis?.total_holding_cost)} | O: ${formatCurrency(kpis?.total_ordering_cost)}`}
@@ -255,7 +247,7 @@ function App() {
         {/* Alerts Panel */}
         <div className="card alerts-card">
           <div className="card-header">
-            <h2>⚠️ Alerts</h2>
+            <h2>Alerts</h2>
             <div className="alert-badges">
               {criticalCount > 0 && <span className="badge critical">{criticalCount}</span>}
               {warningCount > 0 && <span className="badge warning">{warningCount}</span>}
@@ -263,7 +255,7 @@ function App() {
           </div>
           <div className="alerts-list">
             {alerts.length === 0 ? (
-              <div className="no-alerts">✓ No alerts</div>
+              <div className="no-alerts">No alerts</div>
             ) : (
               alerts.slice(0, 8).map((alert, idx) => (
                 <AlertItem key={idx} alert={alert} />
@@ -275,7 +267,7 @@ function App() {
         {/* History Panel */}
         <div className="card history-card">
           <div className="card-header">
-            <h2>📊 History</h2>
+            <h2>History</h2>
             <span className="history-days">{history.length} days</span>
           </div>
           {history.length > 0 ? (

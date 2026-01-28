@@ -126,30 +126,19 @@ body {
 
 .kpi-card {
   background: white;
-  padding: 20px;
+  padding: 24px;
   border-radius: 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   transition: transform 0.2s ease;
+  border-left: 4px solid #0ea5e9;
 }
 
 .kpi-card:hover {
   transform: translateY(-2px);
 }
 
-.kpi-icon {
-  font-size: 32px;
-  line-height: 1;
-}
-
-.kpi-content {
-  flex: 1;
-}
-
 .kpi-value {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: #0f172a;
   margin-bottom: 4px;
@@ -254,8 +243,19 @@ body {
   background: #fffbeb;
 }
 
-.alert-icon {
-  font-size: 12px;
+.alert-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-critical {
+  background: #dc2626;
+}
+
+.dot-warning {
+  background: #d97706;
 }
 
 .alert-content {
@@ -280,7 +280,7 @@ body {
 .no-alerts {
   text-align: center;
   padding: 40px;
-  color: #22c55e;
+  color: #64748b;
   font-weight: 500;
 }
 
