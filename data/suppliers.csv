@@ -1,0 +1,4 @@
+supplier_id,supplier_name,contact_email,phone,address,city,reliability_score,avg_lead_time,min_order_value,max_capacity_per_month,payment_terms_days
+SUP01,TechParts Global,orders@techparts.com,+1-555-0101,123 Tech Avenue,San Jose,0.95,5,500,50000,30
+SUP02,FurniturePro Inc,sales@furniturepro.com,+1-555-0102,456 Industrial Blvd,Chicago,0.88,12,1000,15000,45
+SUP03,OfficeSupply Direct,bulk@officesupply.com,+1-555-0103,789 Commerce Street,Atlanta,0.92,3,200,100000,15

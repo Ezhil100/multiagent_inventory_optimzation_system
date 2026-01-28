@@ -1,0 +1,4 @@
+warehouse_id,warehouse_name,location,total_capacity,current_utilization,operating_cost_daily,manager_name,contact_email
+WH01,Central Electronics Hub,San Francisco,5000,0.72,1250.00,John Smith,jsmith@warehouse.com
+WH02,Furniture Distribution Center,Denver,2500,0.58,850.00,Maria Garcia,mgarcia@warehouse.com
+WH03,Office Supplies Depot,Dallas,8000,0.45,950.00,Robert Chen,rchen@warehouse.com

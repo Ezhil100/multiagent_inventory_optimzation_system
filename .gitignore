@@ -1,0 +1,46 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Node.js
+frontend/node_modules/
+frontend/.cache/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Test outputs
+data/simulation_results.json
+data/inventory_report.csv
+data/daily_history.csv
+
+# Temporary files
+*.tmp
+*.temp
+debug_sim.py
+test_api.py
