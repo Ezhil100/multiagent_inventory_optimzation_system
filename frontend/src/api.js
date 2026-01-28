@@ -2,7 +2,8 @@
  * API service for connecting to FastAPI backend
  */
 
-const API_BASE = 'http://127.0.0.1:8001';
+// Use environment variable for API URL (set in Vercel dashboard for production)
+const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001';
 
 export const api = {
     // Initialize system
