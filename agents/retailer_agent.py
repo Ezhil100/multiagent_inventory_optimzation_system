@@ -404,6 +404,7 @@ class RetailerAgent(BaseAgent):
         data = []
         for product_id, forecast in self.forecasts.items():
             stats = self.get_daily_demand_stats(product_id)
+            history = self.sales_history.get(product_id, [])
             data.append({
                 "product_id": product_id,
                 "daily_avg": round(stats["avg"], 2),
@@ -412,7 +413,8 @@ class RetailerAgent(BaseAgent):
                 "predicted_total": round(forecast.predicted_demand, 0),
                 "confidence_lower": round(forecast.confidence_lower, 0),
                 "confidence_upper": round(forecast.confidence_upper, 0),
-                "method": forecast.method
+                "method": forecast.method,
+                "data_points": len(history)
             })
         
         return pd.DataFrame(data)

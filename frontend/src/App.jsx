@@ -8,10 +8,81 @@ const formatCurrency = (value) => {
   return '₹' + Number(value).toLocaleString('en-IN');
 };
 
+// ==================== LOGIN PAGE ====================
+
+function LoginPage({ onLogin }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    // Simple admin authentication
+    setTimeout(() => {
+      if (username === 'admin' && password === 'admin') {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('user', username);
+        onLogin(username);
+      } else {
+        setError('Invalid username or password');
+      }
+      setLoading(false);
+    }, 500);
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-box">
+        <div className="login-header">
+          <h1>Inventory Optimizer</h1>
+          <p>Multi-Agent Inventory Management System</p>
+        </div>
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label htmlFor="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter username"
+              required
+              autoComplete="username"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
+              required
+              autoComplete="current-password"
+            />
+          </div>
+          {error && <div className="login-error">{error}</div>}
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+          <div className="login-hint">
+            <small>Default: admin / admin</small>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ==================== COMPONENTS ====================
 
 // Navigation Component
-function Navigation({ activeTab, setActiveTab, alerts }) {
+function Navigation({ activeTab, setActiveTab, alerts, onLogout, user }) {
   const criticalCount = alerts.filter(a => a.level === 'critical').length;
 
   const tabs = [
@@ -135,17 +206,41 @@ function DashboardPage({ kpis, alerts, history, formatCurrency }) {
             <div className="history-content">
               <div className="history-stats">
                 <div className="history-stat">
-                  <div className="stat-value">{formatCurrency(history[0]?.total_inventory_value)}</div>
+                  <div className="stat-value">{formatCurrency(history[0]?.inventory_value)}</div>
                   <div className="stat-label">Start Value</div>
                 </div>
                 <div className="history-stat">
-                  <div className="stat-value">{formatCurrency(history[history.length - 1]?.total_inventory_value)}</div>
+                  <div className="stat-value">{formatCurrency(history[history.length - 1]?.inventory_value)}</div>
                   <div className="stat-label">End Value</div>
                 </div>
                 <div className="history-stat">
-                  <div className="stat-value">{(history.reduce((a, b) => a + (b.service_level || 0), 0) / history.length).toFixed(1)}%</div>
+                  <div className="stat-value">{(history.reduce((a, b) => a + (b.service_level || 0), 0) / history.length * 100).toFixed(1)}%</div>
                   <div className="stat-label">Avg Service Level</div>
                 </div>
+              </div>
+              <div className="history-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Inventory Value</th>
+                      <th>Orders</th>
+                      <th>Stockouts</th>
+                      <th>Service Level</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.slice(-5).map((h, idx) => (
+                      <tr key={idx}>
+                        <td>{h.date?.split(' ')[0]}</td>
+                        <td className="number">{formatCurrency(h.inventory_value)}</td>
+                        <td className="number">{h.orders_placed}</td>
+                        <td className="number">{h.stockouts}</td>
+                        <td className="number">{(h.service_level * 100).toFixed(0)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           ) : (
@@ -159,6 +254,8 @@ function DashboardPage({ kpis, alerts, history, formatCurrency }) {
 
 // Inventory Page
 function InventoryPage({ inventory, filter, setFilter, formatCurrency }) {
+  const [search, setSearch] = useState('');
+
   const getStatusClass = (status) => {
     switch (status) {
       case 'OK': return 'status-ok';
@@ -167,6 +264,15 @@ function InventoryPage({ inventory, filter, setFilter, formatCurrency }) {
       default: return '';
     }
   };
+
+  const filteredInventory = inventory.filter(item => {
+    const matchesSearch = search === '' ||
+      item.product_name?.toLowerCase().includes(search.toLowerCase()) ||
+      item.product_id?.toLowerCase().includes(search.toLowerCase()) ||
+      item.warehouse_name?.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === '' || item.status === filter;
+    return matchesSearch && matchesFilter;
+  });
 
   const statusCounts = {
     total: inventory.length,
@@ -180,6 +286,16 @@ function InventoryPage({ inventory, filter, setFilter, formatCurrency }) {
       <div className="page-header">
         <h1>Inventory</h1>
         <p className="page-subtitle">Manage and monitor stock levels</p>
+      </div>
+
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search products, warehouses..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+        />
       </div>
 
       <div className="stats-row">
@@ -213,6 +329,17 @@ function InventoryPage({ inventory, filter, setFilter, formatCurrency }) {
         </div>
         <div className="table-wrapper">
           <table>
+            <colgroup>
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '10%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th>Product</th>
@@ -227,10 +354,10 @@ function InventoryPage({ inventory, filter, setFilter, formatCurrency }) {
               </tr>
             </thead>
             <tbody>
-              {inventory.length === 0 ? (
+              {filteredInventory.length === 0 ? (
                 <tr><td colSpan="9" className="no-data">No inventory data</td></tr>
               ) : (
-                inventory.map((item, idx) => (
+                filteredInventory.map((item, idx) => (
                   <tr key={idx} className={item.status === 'CRITICAL' ? 'row-critical' : ''}>
                     <td className="product-cell">
                       <div className="product-name">{item.product_name}</div>
@@ -259,6 +386,16 @@ function InventoryPage({ inventory, filter, setFilter, formatCurrency }) {
 
 // Orders Page
 function OrdersPage({ kpis, orders }) {
+  const [search, setSearch] = useState('');
+
+  const filteredOrders = orders.filter(order => {
+    if (search === '') return true;
+    const searchLower = search.toLowerCase();
+    return order.product_id?.toLowerCase().includes(searchLower) ||
+      order.warehouse_id?.toLowerCase().includes(searchLower) ||
+      order.action?.toLowerCase().includes(searchLower);
+  });
+
   return (
     <div className="page">
       <div className="page-header">
@@ -266,6 +403,15 @@ function OrdersPage({ kpis, orders }) {
         <p className="page-subtitle">Track orders and deliveries</p>
       </div>
 
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search orders by product, warehouse..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+        />
+      </div>
       <div className="stats-row">
         <div className="stat-box">
           <div className="stat-number">{kpis?.total_orders_placed || 0}</div>
@@ -304,7 +450,7 @@ function OrdersPage({ kpis, orders }) {
                 </tr>
               </thead>
               <tbody>
-                {orders.slice().reverse().map((order, idx) => (
+                {filteredOrders.slice().reverse().map((order, idx) => (
                   <tr key={idx}>
                     <td>Day {order.day}</td>
                     <td>{order.warehouse}</td>
@@ -326,6 +472,15 @@ function OrdersPage({ kpis, orders }) {
 
 // Suppliers Page
 function SuppliersPage({ suppliers }) {
+  const [search, setSearch] = useState('');
+
+  const filteredSuppliers = suppliers.filter(s => {
+    if (search === '') return true;
+    const searchLower = search.toLowerCase();
+    return s.name?.toLowerCase().includes(searchLower) ||
+      s.supplier_id?.toLowerCase().includes(searchLower);
+  });
+
   const totalOrders = suppliers.reduce((a, s) => a + (s.orders_received || 0), 0);
   const totalFulfilled = suppliers.reduce((a, s) => a + (s.orders_fulfilled || 0), 0);
 
@@ -334,6 +489,16 @@ function SuppliersPage({ suppliers }) {
       <div className="page-header">
         <h1>Suppliers</h1>
         <p className="page-subtitle">Supplier configuration and order fulfillment metrics</p>
+      </div>
+
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search suppliers..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+        />
       </div>
 
       <div className="stats-row">
@@ -358,6 +523,14 @@ function SuppliersPage({ suppliers }) {
         </div>
         <div className="table-wrapper">
           <table>
+            <colgroup>
+              <col style={{ width: '25%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '15%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th>Supplier</th>
@@ -369,10 +542,10 @@ function SuppliersPage({ suppliers }) {
               </tr>
             </thead>
             <tbody>
-              {(!suppliers || suppliers.length === 0) ? (
+              {(!filteredSuppliers || filteredSuppliers.length === 0) ? (
                 <tr><td colSpan="6" className="no-data">No supplier data available</td></tr>
               ) : (
-                suppliers.map((s, idx) => (
+                filteredSuppliers.map((s, idx) => (
                   <tr key={idx}>
                     <td className="product-cell">
                       <div className="product-name">{s.name}</div>
@@ -396,6 +569,8 @@ function SuppliersPage({ suppliers }) {
 
 // Warehouses Page
 function WarehousesPage({ warehouses, inventory }) {
+  const [search, setSearch] = useState('');
+
   // Group inventory by warehouse
   const warehouseData = {};
   inventory.forEach(item => {
@@ -417,6 +592,13 @@ function WarehousesPage({ warehouses, inventory }) {
     else warehouseData[item.warehouse_id].ok++;
   });
 
+  const filteredWarehouses = Object.values(warehouseData).filter(wh => {
+    if (search === '') return true;
+    const searchLower = search.toLowerCase();
+    return wh.name?.toLowerCase().includes(searchLower) ||
+      wh.id?.toLowerCase().includes(searchLower);
+  });
+
   return (
     <div className="page">
       <div className="page-header">
@@ -424,8 +606,18 @@ function WarehousesPage({ warehouses, inventory }) {
         <p className="page-subtitle">Monitor warehouse capacity and status</p>
       </div>
 
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search warehouses..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+        />
+      </div>
+
       <div className="warehouse-grid">
-        {Object.values(warehouseData).map((wh, idx) => (
+        {filteredWarehouses.map((wh, idx) => (
           <div key={idx} className="warehouse-card">
             <div className="warehouse-header">
               <h3>{wh.name}</h3>
@@ -455,7 +647,16 @@ function WarehousesPage({ warehouses, inventory }) {
 
 // Forecasts Page
 function ForecastsPage({ forecasts }) {
+  const [search, setSearch] = useState('');
   const horizon = forecasts[0]?.forecast_horizon_days || 7;
+
+  const filteredForecasts = forecasts.filter(f => {
+    if (search === '') return true;
+    const searchLower = search.toLowerCase();
+    return f.product_id?.toLowerCase().includes(searchLower) ||
+      f.product_name?.toLowerCase().includes(searchLower) ||
+      f.warehouse?.toLowerCase().includes(searchLower);
+  });
 
   return (
     <div className="page">
@@ -464,12 +665,22 @@ function ForecastsPage({ forecasts }) {
         <p className="page-subtitle">Demand predictions for the next {horizon} days based on sales history</p>
       </div>
 
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+        />
+      </div>
+
       <div className="card">
         <div className="card-header">
           <h2>Demand Forecasts</h2>
           <span className="badge neutral">Prediction Window: {horizon} days</span>
         </div>
-        {(!forecasts || forecasts.length === 0) ? (
+        {(!filteredForecasts || filteredForecasts.length === 0) ? (
           <div className="empty-state">
             <p>No forecast data available</p>
             <p className="empty-subtitle">Run a simulation to generate sales data, then forecasts will be calculated</p>
@@ -477,6 +688,13 @@ function ForecastsPage({ forecasts }) {
         ) : (
           <div className="table-wrapper">
             <table>
+              <colgroup>
+                <col style={{ width: '25%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '15%' }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Product</th>
@@ -487,7 +705,7 @@ function ForecastsPage({ forecasts }) {
                 </tr>
               </thead>
               <tbody>
-                {forecasts.map((f, idx) => (
+                {filteredForecasts.map((f, idx) => (
                   <tr key={idx}>
                     <td className="product-cell">
                       <div className="product-name">{f.product_name || f.product_id}</div>
@@ -510,14 +728,35 @@ function ForecastsPage({ forecasts }) {
 
 // Alerts Page
 function AlertsPage({ alerts }) {
-  const criticalAlerts = alerts.filter(a => a.level === 'critical');
-  const warningAlerts = alerts.filter(a => a.level === 'warning');
+  const [search, setSearch] = useState('');
+
+  const filteredAlerts = alerts.filter(a => {
+    if (search === '') return true;
+    const searchLower = search.toLowerCase();
+    return a.product?.toLowerCase().includes(searchLower) ||
+      a.product_id?.toLowerCase().includes(searchLower) ||
+      a.warehouse?.toLowerCase().includes(searchLower) ||
+      a.type?.toLowerCase().includes(searchLower);
+  });
+
+  const criticalAlerts = filteredAlerts.filter(a => a.level === 'critical');
+  const warningAlerts = filteredAlerts.filter(a => a.level === 'warning');
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Alerts</h1>
         <p className="page-subtitle">System notifications and warnings</p>
+      </div>
+
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search alerts by product, warehouse..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+        />
       </div>
 
       <div className="stats-row">
@@ -530,7 +769,7 @@ function AlertsPage({ alerts }) {
           <div className="stat-text">Warnings</div>
         </div>
         <div className="stat-box">
-          <div className="stat-number">{alerts.length}</div>
+          <div className="stat-number">{filteredAlerts.length}</div>
           <div className="stat-text">Total Alerts</div>
         </div>
       </div>
@@ -578,6 +817,8 @@ function AlertsPage({ alerts }) {
 // ==================== MAIN APP ====================
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
+  const [user, setUser] = useState(() => localStorage.getItem('user') || '');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [kpis, setKpis] = useState(null);
   const [inventory, setInventory] = useState([]);
@@ -591,6 +832,18 @@ function App() {
   const [simulating, setSimulating] = useState(false);
   const [filter, setFilter] = useState('');
   const [error, setError] = useState(null);
+
+  const handleLogin = (username) => {
+    setIsLoggedIn(true);
+    setUser(username);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
+    setIsLoggedIn(false);
+    setUser('');
+  };
 
   const loadData = async () => {
     try {
@@ -619,6 +872,10 @@ function App() {
   };
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      setLoading(false);
+      return;
+    }
     const init = async () => {
       try {
         await api.initialize();
@@ -629,10 +886,10 @@ function App() {
       }
     };
     init();
-  }, []);
+  }, [isLoggedIn]);
 
   useEffect(() => {
-    if (!loading) loadData();
+    if (!loading && isLoggedIn) loadData();
   }, [filter]);
 
   const runSimulation = async () => {
@@ -652,6 +909,11 @@ function App() {
     await api.initialize();
     await loadData();
   };
+
+  // Show login page if not authenticated
+  if (!isLoggedIn) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
   if (loading) {
     return (
@@ -716,6 +978,10 @@ function App() {
             {simulating ? 'Running...' : 'Run'}
           </button>
           <button onClick={resetSystem} className="btn secondary">Reset</button>
+          <div className="user-section">
+            <span className="user-name">{user}</span>
+            <button onClick={handleLogout} className="btn logout">Logout</button>
+          </div>
         </div>
       </header>
 
