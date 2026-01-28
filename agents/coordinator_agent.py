@@ -166,7 +166,9 @@ class CoordinatorAgent(BaseAgent):
         if random_seed:
             np.random.seed(random_seed)
         
-        self.current_time = self.config.start_date
+        # Only set current_time if not already running (first config)
+        if self.current_day == 0:
+            self.current_time = self.config.start_date
     
     def run_simulation(self, num_days: int = None) -> Dict[str, Any]:
         """
@@ -183,11 +185,15 @@ class CoordinatorAgent(BaseAgent):
         print("=" * 60)
         
         self.simulation_running = True
-        self.current_time = self.config.start_date
-        self.daily_snapshots = []
         
+        # Only reset time if this is first run (day 0)
+        if self.current_day == 0:
+            self.current_time = self.config.start_date
+            self.daily_snapshots = []
+        
+        start_day = self.current_day
         for day in range(self.config.num_days):
-            self.current_day = day + 1
+            self.current_day = start_day + day + 1
             self._run_daily_step()
         
         self.simulation_running = False
@@ -329,7 +335,12 @@ class CoordinatorAgent(BaseAgent):
         for supplier in self.suppliers.values():
             metrics = supplier.get_performance_metrics()
             metrics['supplier_id'] = supplier.agent_id
-            metrics['supplier_name'] = supplier.name
+            metrics['name'] = supplier.name
+            metrics['lead_time_days'] = supplier.lead_time_days
+            metrics['reliability'] = supplier.reliability
+            metrics['orders_received'] = supplier.total_orders_received
+            metrics['orders_fulfilled'] = len(supplier.fulfilled_orders)
+            metrics['total_units_supplied'] = supplier.total_units_shipped
             data.append(metrics)
         
         return pd.DataFrame(data)

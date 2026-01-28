@@ -219,6 +219,10 @@ async def run_simulation(days: int = Query(default=30, ge=1, le=365)):
     try:
         results = coord.run_simulation(days)
         
+        # Regenerate forecasts after simulation (based on new sales data)
+        for retailer in coord.retailers.values():
+            retailer.generate_all_forecasts(method="weighted")
+        
         # Ensure datetime objects are serialized properly
         import json
         def serialize_datetime(obj):
@@ -333,15 +337,39 @@ async def get_suppliers():
 
 @app.get("/api/forecasts")
 async def get_forecasts():
-    """Get demand forecasts."""
+    """Get demand forecasts based on warehouse demand history."""
     coord = get_coordinator()
+    
+    # First try to get retailer forecasts
     df = coord.get_all_forecasts()
     
     if df.empty:
-        # Generate forecasts if not available
-        for retailer in coord.retailers.values():
-            retailer.generate_all_forecasts(method="weighted")
-        df = coord.get_all_forecasts()
+        # Generate forecasts from warehouse inventory data instead
+        forecasts = []
+        for warehouse in coord.warehouses.values():
+            for product_id, item in warehouse.inventory.items():
+                demand_history = item.demand_history
+                if demand_history and len(demand_history) > 0:
+                    avg_demand = sum(demand_history) / len(demand_history)
+                    std_demand = (sum((x - avg_demand) ** 2 for x in demand_history) / len(demand_history)) ** 0.5
+                    forecast_days = 7
+                    predicted = avg_demand * forecast_days
+                    forecasts.append({
+                        "product_id": product_id,
+                        "product_name": item.name,
+                        "warehouse": warehouse.name,
+                        "daily_avg": round(avg_demand, 1),
+                        "daily_std": round(std_demand, 1),
+                        "forecast_horizon_days": forecast_days,
+                        "predicted_total": round(predicted, 0),
+                        "confidence_lower": round(max(0, predicted - 1.96 * std_demand * (forecast_days ** 0.5)), 0),
+                        "confidence_upper": round(predicted + 1.96 * std_demand * (forecast_days ** 0.5), 0),
+                        "method": "warehouse_demand",
+                        "data_points": len(demand_history)
+                    })
+        
+        if forecasts:
+            return {"forecasts": forecasts, "total": len(forecasts)}
     
     if df.empty:
         return {"forecasts": [], "total": 0}
@@ -367,6 +395,17 @@ async def get_history():
     return {
         "history": df.to_dict('records'),
         "days": len(df)
+    }
+
+
+@app.get("/api/orders")
+async def get_orders():
+    """Get all orders from optimization log."""
+    coord = get_coordinator()
+    orders = [log for log in coord.optimization_log if log.get("action") == "reorder"]
+    return {
+        "orders": orders[-50:],  # Last 50 orders
+        "total": len(orders)
     }
 
 

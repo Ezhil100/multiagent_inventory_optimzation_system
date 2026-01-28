@@ -52,6 +52,18 @@ export const api = {
         return res.json();
     },
 
+    // Get orders
+    async getOrders() {
+        const res = await fetch(`${API_BASE}/api/orders`);
+        return res.json();
+    },
+
+    // Get forecasts
+    async getForecasts() {
+        const res = await fetch(`${API_BASE}/api/forecasts`);
+        return res.json();
+    },
+
     // Run simulation
     async runSimulation(days = 30) {
         const res = await fetch(`${API_BASE}/api/simulation/run?days=${days}`, { method: 'POST' });
